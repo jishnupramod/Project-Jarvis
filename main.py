@@ -15,6 +15,10 @@ from gtts import gTTS
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
+DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+DAY_EXTENTIONS = ["th", "st", "rd"]
+
 def speak(text):
     tts = gTTS(text=text, lang="en")
     filename = 'voice.mp3'
@@ -83,5 +87,51 @@ def get_events(n, service):
         speak(f'The event {event["summary"]} is there on {start}')
 
 
-service = authenticate_google()
-get_events(2, service)
+def get_date(text):
+    text = text.lower()
+    today = datetime.date.today()
+    if text.count("today") > 0:
+        return today
+
+    day = -1
+    day_of_week = -1
+    month = -1
+    year = today.year
+
+    for word in text.split():
+        if word in MONTHS:
+            month = MONTHS.index(word) + 1
+        elif word in DAYS:
+            day_of_week = DAYS.index(word)
+        elif word.isdigit():
+            day = int(word)
+        else:
+            for ext in DAY_EXTENTIONS:
+                found = word.find(ext)
+                if found > 0:
+                    try:
+                        day = int(word[:found])
+                    except:
+                        pass
+
+    if month < today.month and month != -1:
+        year += 1
+    if day < today.day and month == -1 and day != -1:
+        month += 1
+    if month == -1 and day == -1 and day_of_week != -1:
+        current_weekday = today.weekday()
+        diff = current_weekday - day_of_week
+        if diff < 0:
+            diff = abs(diff)
+            if text.count("next") > 0:
+                diff += 7
+
+        return today + datetime.timedelta(diff)
+
+    return datetime.date(month=month, day=day, year=year)
+
+
+text = get_audio().lower()
+print(get_date(text))
+
+# Test completed for date identification !
